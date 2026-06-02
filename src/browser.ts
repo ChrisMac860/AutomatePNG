@@ -38,6 +38,10 @@ export async function composePngDataUrl(options: BrowserComposeOptions): Promise
 }
 
 export async function copyPngToClipboard(options: BrowserComposeOptions): Promise<void> {
+  return copyPngBlobToClipboard(composePngBlob(options));
+}
+
+export async function copyPngBlobToClipboard(blobOrPromise: Blob | Promise<Blob>): Promise<void> {
   if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
     throw new PngTextOverlayError(
       "clipboard_unavailable",
@@ -45,7 +49,14 @@ export async function copyPngToClipboard(options: BrowserComposeOptions): Promis
     );
   }
 
-  const pngBlob = composePngBlob(options);
+  if (typeof ClipboardItem.supports === "function" && !ClipboardItem.supports("image/png")) {
+    throw new PngTextOverlayError(
+      "clipboard_unavailable",
+      "PNG image clipboard writes are not supported in this browser."
+    );
+  }
+
+  const pngBlob = Promise.resolve(blobOrPromise).then((blob) => normalizePngBlob(blob));
 
   try {
     await navigator.clipboard.write([
@@ -76,9 +87,11 @@ export function sharePngBlob(blob: Blob, shareOptions: BrowserShareOptions = {})
     type: "image/png"
   });
   const shareData: ShareData = {
-    files: [file],
-    title: shareOptions.title ?? "PNG text overlay"
+    files: [file]
   };
+  if (shareOptions.title) {
+    shareData.title = shareOptions.title;
+  }
   if (shareOptions.text) {
     shareData.text = shareOptions.text;
   }
@@ -103,8 +116,6 @@ export async function sharePngToInstagramStory(
 ): Promise<void> {
   await sharePngFile(options, {
     filename: "finisher-sticker.png",
-    title: "Share to Instagram Story",
-    text: "Choose Instagram from the share sheet.",
     ...shareOptions
   });
 }
@@ -115,10 +126,15 @@ export function sharePngBlobToInstagramStory(
 ): Promise<void> {
   return sharePngBlob(blob, {
     filename: "finisher-sticker.png",
-    title: "Share to Instagram Story",
-    text: "Choose Instagram from the share sheet.",
     ...shareOptions
   });
+}
+
+function normalizePngBlob(blob: Blob): Blob {
+  if (blob.type === "image/png") {
+    return blob;
+  }
+  return new Blob([blob], { type: "image/png" });
 }
 
 async function decodeBrowserImage(source: BrowserImageSource): Promise<CanvasImageSource> {

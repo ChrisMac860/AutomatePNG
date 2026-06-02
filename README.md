@@ -1,8 +1,8 @@
 # story-sticker-kit
 
-Create transparent PNG story stickers with text overlays, clipboard copy, downloads, and an iPhone-friendly share-sheet flow.
+Create transparent PNG story stickers with text overlays, clipboard copy, downloads, and an iPhone-friendly story paste flow.
 
-This is built for Strava-style web stickers: render a transparent PNG, place text into controlled boxes, then let the user copy, download, or share the image through the native iOS share sheet.
+This is built for Strava-style web stickers: render a transparent PNG, place text into controlled boxes, then let the user copy, download, or pass the image to the browser's native share sheet.
 
 ## Features
 
@@ -10,7 +10,8 @@ This is built for Strava-style web stickers: render a transparent PNG, place tex
 - Node.js PNG composition via optional `sharp`.
 - Multiple text layers with pixel boxes, alignment, opacity, font settings, shrink/wrap fitting, and max lines.
 - `copyPngToClipboard()` for image clipboard writes.
-- `sharePngBlobToInstagramStory()` for the Strava-style iPhone share-sheet flow.
+- `copyPngBlobToClipboard()` for reusing an already-rendering PNG Blob.
+- `sharePngBlobToInstagramStory()` for file-share fallback when clipboard paste is unavailable.
 - Tiny framework-agnostic TypeScript API.
 - Vite demo and Playwright browser tests.
 
@@ -25,6 +26,7 @@ npm install story-sticker-kit
 ```ts
 import {
   composePngBlob,
+  copyPngBlobToClipboard,
   copyPngToClipboard,
   sharePngBlobToInstagramStory
 } from "story-sticker-kit/browser";
@@ -52,20 +54,24 @@ const stickerOptions = {
   ]
 } as const;
 
-let readyBlob = await composePngBlob(stickerOptions);
-
 copyButton.addEventListener("click", () => {
   void copyPngToClipboard(stickerOptions);
 });
 
-shareButton.addEventListener("click", () => {
-  void sharePngBlobToInstagramStory(readyBlob);
+shareButton.addEventListener("click", async () => {
+  const readyBlob = composePngBlob(stickerOptions);
+
+  try {
+    await copyPngBlobToClipboard(readyBlob);
+  } catch {
+    await sharePngBlobToInstagramStory(await readyBlob);
+  }
 });
 ```
 
-For iPhone sharing, pre-render the PNG before the tap with `composePngBlob()`, then call `sharePngBlobToInstagramStory()` directly from the button handler. That opens the native iOS share sheet with a PNG file, where the user can choose Instagram, Copy, Messages, or any other target iOS exposes.
+For iPhone story sharing, start `composePngBlob()` inside the tap handler and pass that promise straight to `copyPngBlobToClipboard()`. Safari can keep the clipboard write tied to the user's tap while the PNG finishes rendering, letting the user paste the sticker into Instagram Story. If image clipboard writes are unavailable, fall back to `sharePngBlobToInstagramStory()` or a download link.
 
-Browser JavaScript cannot force Instagram Stories to open with a prepared sticker. Native apps can integrate more deeply with Instagram-specific schemes/intents; web apps should use the iOS share sheet.
+Browser JavaScript cannot force Instagram Stories to open with a prepared sticker or reproduce a native app's custom Strava-style share screen. Native apps can integrate more deeply with Instagram-specific schemes/intents; web apps should use clipboard paste plus Web Share/download fallbacks.
 
 ## Node.js
 
@@ -103,6 +109,7 @@ await writeFile("sticker-output.png", output);
 - `composePngBlob(options): Promise<Blob>`
 - `composePngDataUrl(options): Promise<string>`
 - `copyPngToClipboard(options): Promise<void>`
+- `copyPngBlobToClipboard(blobOrPromise): Promise<void>`
 - `sharePngFile(options, shareOptions): Promise<void>`
 - `sharePngBlob(blob, shareOptions): Promise<void>`
 - `sharePngToInstagramStory(options, shareOptions): Promise<void>`

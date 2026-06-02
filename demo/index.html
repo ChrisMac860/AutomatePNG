@@ -81,13 +81,13 @@
               shrink/wrap fitting.
             </p>
             <p>
-              On mobile, pre-render the PNG inside the user action and call
-              <code>sharePngBlobToInstagramStory</code>. Browser JavaScript cannot force
-              Instagram Stories to open directly, so the library uses the native share sheet.
-              When sharing is unavailable, keep copy and download fallbacks visible.
+              On iPhone Safari, start the PNG inside the user action and pass that promise to
+              <code>copyPngBlobToClipboard</code> so the runner can paste it into Instagram
+              Story. Browser JavaScript cannot force Instagram Stories to open directly, so keep
+              native share, copy, and download fallbacks visible.
             </p>
           </div>
-          <pre aria-label="Example code"><code>const blob = await composePngBlob({
+          <pre aria-label="Example code"><code>const blobPromise = composePngBlob({
   image: routeStickerPng,
   layers: [
     { text: runner.time, box: timeBox, color: "#fff" },
@@ -95,9 +95,7 @@
   ]
 });
 
-await sharePngBlobToInstagramStory(blob, {
-  filename: "grand-5km-run-1.png"
-});</code></pre>
+await copyPngBlobToClipboard(blobPromise);</code></pre>
         </div>
       </section>
 

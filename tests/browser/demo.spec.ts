@@ -2,6 +2,11 @@ import { expect, test } from "@playwright/test";
 
 declare global {
   interface Window {
+    __clipboardWrite?: {
+      blobSize?: number;
+      blobType?: string;
+      types?: string[];
+    };
     __shareCall?: {
       title?: string;
       text?: string;
@@ -101,15 +106,73 @@ test("row share generates a transparent runner PNG and reveals the preview", asy
   expect(pixelReport.whitePixels).toBeGreaterThan(100);
 });
 
-test("row share sends the generated runner PNG to the native share sheet when supported", async ({
+test("iPhone row share copies the generated PNG instead of opening a generic file sheet", async ({
   page
 }) => {
   await page.addInitScript(() => {
-    Object.assign(navigator, {
-      canShare(data: ShareData) {
+    class MockClipboardItem {
+      static supports(type: string): boolean {
+        return type === "image/png";
+      }
+
+      readonly data: Record<string, Blob | Promise<Blob>>;
+      readonly types: string[];
+
+      constructor(data: Record<string, Blob | Promise<Blob>>) {
+        this.data = data;
+        this.types = Object.keys(data);
+      }
+
+      async getType(type: string): Promise<Blob> {
+        const value = this.data[type];
+        if (!value) {
+          throw new Error(`Missing clipboard type ${type}`);
+        }
+        return value;
+      }
+    }
+
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
+    });
+    Object.defineProperty(navigator, "platform", {
+      configurable: true,
+      value: "iPhone"
+    });
+    Object.defineProperty(window, "ClipboardItem", {
+      configurable: true,
+      value: MockClipboardItem
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        async write(items: ClipboardItem[]) {
+          const item = items[0] as unknown as MockClipboardItem | undefined;
+          if (!item) {
+            throw new Error("No clipboard item was written");
+          }
+          const blob = await item.getType("image/png");
+          Object.assign(window, {
+            __clipboardWrite: {
+              blobSize: blob.size,
+              blobType: blob.type,
+              types: item.types
+            }
+          });
+        }
+      }
+    });
+    Object.defineProperty(navigator, "canShare", {
+      configurable: true,
+      value(data: ShareData) {
         return Array.isArray(data.files) && data.files.length === 1;
-      },
-      async share(data: ShareData) {
+      }
+    });
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: ShareData) => {
         const file = data.files?.[0];
         if (!file) {
           throw new Error("No file was shared");
@@ -130,15 +193,62 @@ test("row share sends the generated runner PNG to the native share sheet when su
   await page.goto("/");
   await page.getByRole("button", { name: "Share runner 2", exact: true }).click();
 
-  await expect(page.getByRole("status")).toHaveText(/choose instagram/i);
+  await expect(page.getByRole("status")).toHaveText(/copied png/i);
+  await expect(page.getByRole("status")).toHaveText(/paste it into instagram story/i);
+  const clipboardWrite = await page.evaluate(() => window.__clipboardWrite);
+  expect(clipboardWrite).toMatchObject({
+    blobType: "image/png",
+    types: ["image/png"]
+  });
+  expect(clipboardWrite?.blobSize).toBeGreaterThan(100);
+  await expect(page.getByAltText("Generated Grand 5km Run sticker preview")).toBeVisible();
+  await expect(page.locator("#selected-time")).toHaveText("18:38.31");
+  await expect(page.locator("#selected-name")).toHaveText("Erik Müller");
+  await expect(page.evaluate(() => window.__shareCall)).resolves.toBeUndefined();
+});
+
+test("non-iPhone row share sends one generated runner PNG to the native share sheet", async ({
+  page
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "canShare", {
+      configurable: true,
+      value(data: ShareData) {
+        return Array.isArray(data.files) && data.files.length === 1;
+      }
+    });
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: ShareData) => {
+        const file = data.files?.[0];
+        if (!file) {
+          throw new Error("No file was shared");
+        }
+        Object.assign(window, {
+          __shareCall: {
+            title: data.title,
+            text: data.text,
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size
+          }
+        });
+      }
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Share runner 2", exact: true }).click();
+
+  await expect(page.getByRole("status")).toHaveText(/native share sheet/i);
   const shareCall = await page.evaluate(() => window.__shareCall);
   expect(shareCall).toMatchObject({
-    title: "Grand 5km Run finisher sticker",
-    text: "Erik Muller finished the Grand 5km Run in 18:38.31.",
     fileName: "grand-5km-run-2.png",
     fileType: "image/png"
   });
   expect(shareCall?.fileSize).toBeGreaterThan(100);
+  expect(shareCall?.title).toBeUndefined();
+  expect(shareCall?.text).toBeUndefined();
 });
 
 test("unsupported native share keeps copy and download fallbacks available", async ({ page }) => {

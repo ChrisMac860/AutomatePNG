@@ -1,5 +1,6 @@
 import {
   composePngBlob,
+  copyPngBlobToClipboard,
   copyPngToClipboard,
   sharePngBlobToInstagramStory
 } from "../src/browser.js";
@@ -98,19 +99,33 @@ async function shareRunner(runner: RunnerResult, trigger: HTMLButtonElement): Pr
 
   try {
     const options = createStickerOptions(runner);
-    const blob = await composePngBlob(options);
+    const blobPromise = composePngBlob(options);
+    const storyClipboardCopy = shouldPreferStoryClipboard()
+      ? copyPngBlobToClipboard(blobPromise)
+          .then(() => ({ ok: true as const }))
+          .catch(() => ({ ok: false as const }))
+      : null;
+    const blob = await blobPromise;
     const dataUrl = await blobToDataUrl(blob);
     updatePreview(runner, dataUrl);
     setStatus(`Sticker ready for ${runner.participant} (${runner.time}).`);
 
+    if (storyClipboardCopy) {
+      const copyResult = await storyClipboardCopy;
+      if (copyResult.ok) {
+        setStatus(
+          `Copied PNG for ${runner.participant} (${runner.time}). Paste it into Instagram Story, or use Download PNG.`
+        );
+        return;
+      }
+    }
+
     try {
       await sharePngBlobToInstagramStory(blob, {
-        filename: stickerFilename(runner),
-        title: `${EVENT_NAME} finisher sticker`,
-        text: `${plainTextName(runner.participant)} finished the ${EVENT_NAME} in ${runner.time}.`
+        filename: stickerFilename(runner)
       });
       setStatus(
-        `Choose Instagram from the share sheet. ${runner.participant} finished in ${runner.time}.`
+        `Opened the native share sheet for ${runner.participant} (${runner.time}).`
       );
     } catch {
       setStatus(
@@ -250,8 +265,13 @@ function stickerFilename(runner: RunnerResult): string {
   return `grand-5km-run-${runner.position}.png`;
 }
 
-function plainTextName(name: string): string {
-  return name.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+function shouldPreferStoryClipboard(): boolean {
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform;
+  const isIpadOS = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  const isIOS = /iPad|iPhone|iPod/.test(platform) || isIpadOS;
+  const isSafari = /Safari/i.test(userAgent) && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(userAgent);
+  return isIOS && isSafari;
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
