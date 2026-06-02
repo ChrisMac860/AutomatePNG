@@ -1,18 +1,54 @@
 import { expect, test } from "@playwright/test";
 
-test("demo composes a PNG data URL with visible text and transparent corners", async ({ page }) => {
+declare global {
+  interface Window {
+    __shareCall?: {
+      title?: string;
+      text?: string;
+      fileName?: string;
+      fileType?: string;
+      fileSize?: number;
+    };
+  }
+}
+
+test("demo renders the full Grand 5km Run results table before any PNG preview", async ({
+  page
+}) => {
   await page.goto("/");
 
-  await page.getByLabel("Name").fill("Christopher Mackle");
-  await page.getByLabel("Time").fill("22:41");
-  await page.getByRole("button", { name: "Render PNG" }).click();
+  await expect(page).toHaveTitle(/Grand 5km Run/);
+  await expect(
+    page.getByRole("heading", { name: "Grand 5km Run", exact: true })
+  ).toBeVisible();
 
-  const image = page.getByAltText("Composed PNG preview");
-  await expect(image).toBeVisible();
-  await expect(image).toHaveAttribute("src", /^data:image\/png;base64,/);
+  const runnerRows = page.locator("[data-runner-row]");
+  await expect(runnerRows).toHaveCount(100);
+  await expect(runnerRows.first()).toContainText("Nikolai Kovalev");
+  await expect(runnerRows.first()).toContainText("18:36.00");
+  await expect(page.getByRole("table", { name: "Grand 5km Run results" })).toBeVisible();
+  await expect(page.getByAltText("Generated Grand 5km Run sticker preview")).toBeHidden();
+  await expect(page.getByRole("status")).toHaveText(/choose a finisher/i);
+});
+
+test("row share generates a transparent runner PNG and reveals the preview", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Share runner 1", exact: true }).click();
+
+  const preview = page.getByAltText("Generated Grand 5km Run sticker preview");
+  await expect(preview).toBeVisible();
+  await expect(preview).toHaveAttribute("src", /^data:image\/png;base64,/);
+  await expect(page.locator("#selected-time")).toHaveText("18:36.00");
+  await expect(page.locator("#selected-name")).toHaveText("Nikolai Kovalev");
+  await expect(page.getByRole("status")).toHaveText(/sticker ready/i);
+  await expect(page.getByRole("link", { name: /download/i })).toHaveAttribute(
+    "href",
+    /^data:image\/png;base64,/
+  );
 
   const pixelReport = await page.evaluate(async () => {
-    const img = document.querySelector<HTMLImageElement>("#output-preview");
+    const img = document.querySelector<HTMLImageElement>("#sticker-preview");
     if (!img?.src) {
       throw new Error("Preview image missing");
     }
@@ -32,99 +68,43 @@ test("demo composes a PNG data URL with visible text and transparent corners", a
 
     const cornerAlpha = ctx.getImageData(0, 0, 1, 1).data[3];
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let whitePixels = 0;
     let visiblePixels = 0;
-    for (let i = 3; i < imageData.length; i += 4) {
-      if (imageData[i] > 0) {
+    for (let i = 0; i < imageData.length; i += 4) {
+      const red = imageData[i] ?? 0;
+      const green = imageData[i + 1] ?? 0;
+      const blue = imageData[i + 2] ?? 0;
+      const alpha = imageData[i + 3] ?? 0;
+      if (alpha > 0) {
         visiblePixels += 1;
       }
-    }
-
-    return { cornerAlpha, visiblePixels };
-  });
-
-  expect(pixelReport.cornerAlpha).toBe(0);
-  expect(pixelReport.visiblePixels).toBeGreaterThan(100);
-  await expect(image).toHaveJSProperty("naturalWidth", 1120);
-  await expect(image).toHaveJSProperty("naturalHeight", 820);
-});
-
-test("demo copies the composed PNG to the async clipboard", async ({ page }) => {
-  await page.addInitScript(() => {
-    class MockClipboardItem {
-      readonly types: string[];
-      private readonly items: Record<string, Blob | string | Promise<Blob | string>>;
-
-      constructor(items: Record<string, Blob | string | Promise<Blob | string>>) {
-        this.items = items;
-        this.types = Object.keys(items);
-      }
-
-      async getType(type: string): Promise<Blob | string> {
-        const value = this.items[type];
-        if (!value) {
-          throw new Error(`Missing clipboard type ${type}`);
-        }
-        return value;
+      if (alpha > 180 && red > 235 && green > 235 && blue > 235) {
+        whitePixels += 1;
       }
     }
 
-    Object.defineProperty(window, "ClipboardItem", {
-      configurable: true,
-      value: MockClipboardItem
-    });
-
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: {
-        async write(items: Array<{ types: string[]; getType(type: string): Promise<Blob | string> }>) {
-          const first = items[0];
-          if (!first) {
-            throw new Error("No clipboard item was written");
-          }
-          const blob = await first.getType("image/png");
-          if (!(blob instanceof Blob)) {
-            throw new Error("Clipboard payload was not a Blob");
-          }
-          Object.assign(window, {
-            __clipboardWrite: {
-              itemCount: items.length,
-              types: first.types,
-              blobType: blob.type,
-              blobSize: blob.size
-            }
-          });
-        }
-      }
-    });
-  });
-
-  await page.goto("/");
-  await page.getByLabel("Name").fill("Christopher Mackle");
-  await page.getByRole("button", { name: "Copy PNG" }).click();
-
-  await expect(page.getByRole("status")).toHaveText("Copied PNG to clipboard");
-
-  const clipboardWrite = await page.evaluate(() => window.__clipboardWrite);
-  expect(clipboardWrite).toMatchObject({
-    itemCount: 1,
-    types: ["image/png"],
-    blobType: "image/png"
-  });
-  expect(clipboardWrite.blobSize).toBeGreaterThan(100);
-});
-
-test("demo shares the composed PNG through the native share sheet", async ({ page }) => {
-  await page.addInitScript(() => {
-    const originalToBlob = HTMLCanvasElement.prototype.toBlob;
-    HTMLCanvasElement.prototype.toBlob = function (
-      callback: BlobCallback,
-      type?: string,
-      quality?: unknown
-    ) {
-      window.__toBlobCount = (window.__toBlobCount ?? 0) + 1;
-      return originalToBlob.call(this, callback, type, quality);
+    return {
+      cornerAlpha,
+      height: decoded.naturalHeight,
+      visiblePixels,
+      whitePixels,
+      width: decoded.naturalWidth
     };
+  });
 
+  expect(pixelReport).toMatchObject({
+    cornerAlpha: 0,
+    width: 1440,
+    height: 1080
+  });
+  expect(pixelReport.visiblePixels).toBeGreaterThan(1_000);
+  expect(pixelReport.whitePixels).toBeGreaterThan(100);
+});
+
+test("row share sends the generated runner PNG to the native share sheet when supported", async ({
+  page
+}) => {
+  await page.addInitScript(() => {
     Object.assign(navigator, {
       canShare(data: ShareData) {
         return Array.isArray(data.files) && data.files.length === 1;
@@ -148,23 +128,27 @@ test("demo shares the composed PNG through the native share sheet", async ({ pag
   });
 
   await page.goto("/");
-  await page.getByLabel("Name").fill("Christopher Mackle");
-  await expect(page.getByAltText("Composed PNG preview")).toHaveJSProperty("complete", true);
+  await page.getByRole("button", { name: "Share runner 2", exact: true }).click();
 
-  await page.evaluate(() => {
-    window.__toBlobCount = 0;
-  });
-  await page.getByRole("button", { name: "Share to Story" }).click();
-
-  await expect(page.getByRole("status")).toHaveText("Choose Instagram from the share sheet");
-
+  await expect(page.getByRole("status")).toHaveText(/choose instagram/i);
   const shareCall = await page.evaluate(() => window.__shareCall);
   expect(shareCall).toMatchObject({
-    title: "Share to Instagram Story",
-    text: "Choose Instagram from the share sheet.",
-    fileName: "finisher-sticker.png",
+    title: "Grand 5km Run finisher sticker",
+    text: "Erik Muller finished the Grand 5km Run in 18:38.31.",
+    fileName: "grand-5km-run-2.png",
     fileType: "image/png"
   });
-  expect(shareCall.fileSize).toBeGreaterThan(100);
-  expect(await page.evaluate(() => window.__toBlobCount)).toBe(0);
+  expect(shareCall?.fileSize).toBeGreaterThan(100);
+});
+
+test("unsupported native share keeps copy and download fallbacks available", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Share runner 3", exact: true }).click();
+
+  await expect(page.getByRole("status")).toHaveText(/sticker ready/i);
+  await expect(page.getByRole("button", { name: "Copy PNG" })).toBeEnabled();
+  await expect(page.getByRole("link", { name: /download/i })).toHaveAttribute(
+    "download",
+    "grand-5km-run-3.png"
+  );
 });

@@ -43,6 +43,8 @@ describe("composePngBuffer", () => {
     const alphaAt = (x: number, y: number) => raw[(y * 320 + x) * 4 + 3] ?? 0;
 
     expect(alphaAt(0, 0)).toBe(0);
-    expect(Array.from(raw).some((_, index) => index % 4 === 3 && raw[index] > 0)).toBe(true);
+    expect(Array.from(raw).some((_, index) => index % 4 === 3 && (raw[index] ?? 0) > 0)).toBe(
+      true
+    );
   });
 });

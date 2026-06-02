@@ -10,13 +10,13 @@ const deterministicMeasurer: TextMeasurer = {
 
 describe("text layout", () => {
   it("keeps short text on one centered line", () => {
-    const [layer] = normalizeTextLayers([
+    const layer = normalizeTextLayers([
       {
         text: "22:41",
         box: { x: 0, y: 0, width: 220, height: 80 },
         font: { size: 48 }
       }
-    ]);
+    ])[0]!;
 
     const layout = layoutTextLayer(layer, deterministicMeasurer);
 
@@ -26,7 +26,7 @@ describe("text layout", () => {
   });
 
   it("shrinks long single-line text to fit the box", () => {
-    const [layer] = normalizeTextLayers([
+    const layer = normalizeTextLayers([
       {
         text: "Christopher Mackle",
         box: { x: 0, y: 0, width: 170, height: 52 },
@@ -35,7 +35,7 @@ describe("text layout", () => {
         maxLines: 1,
         minFontSize: 14
       }
-    ]);
+    ])[0]!;
 
     const layout = layoutTextLayer(layer, deterministicMeasurer);
 
@@ -46,7 +46,7 @@ describe("text layout", () => {
   });
 
   it("wraps multi-word text into the configured number of lines", () => {
-    const [layer] = normalizeTextLayers([
+    const layer = normalizeTextLayers([
       {
         text: "The Long Woman's Five Kilometre Challenge",
         box: { x: 0, y: 0, width: 180, height: 96 },
@@ -55,7 +55,7 @@ describe("text layout", () => {
         maxLines: 3,
         minFontSize: 12
       }
-    ]);
+    ])[0]!;
 
     const layout = layoutTextLayer(layer, deterministicMeasurer);
 

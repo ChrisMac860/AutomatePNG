@@ -155,7 +155,7 @@ http://100.118.226.71:5173/
 
 For reliable iPhone Safari clipboard/Web Share behavior, use HTTPS. Plain HTTP is fine for viewing the demo, but Safari may block clipboard/share APIs outside secure contexts. Use Tailscale Serve, Cloudflare Tunnel, ngrok, or another trusted HTTPS setup for full mobile testing.
 
-## Demo
+## Grand 5km Run Demo
 
 ```sh
 npm install
@@ -164,7 +164,33 @@ npm run dev
 
 Open [http://127.0.0.1:5173/](http://127.0.0.1:5173/).
 
-The demo renders a route sticker, places name/time/event text into bottom text boxes, and provides Render, Copy, Share, and Download controls.
+The demo page is a mobile-first **Grand 5km Run** results table. It uses the fake
+100-runner result set, keeps the generated sticker hidden until a row share action,
+then creates a transparent PNG with the runner's time and name in white text.
+
+For a production demo build:
+
+```sh
+npm run build:demo
+```
+
+That writes the static site to `demo-dist/`.
+
+## GitHub Pages Deployment
+
+This repo includes a GitHub Actions workflow at `.github/workflows/pages.yml`.
+To deploy the demo:
+
+1. Enable GitHub Pages for the repository and choose **GitHub Actions** as the source.
+2. Push to `main` or `AutomatePNGMain`.
+3. The workflow runs `npm ci`, `npm test`, `npm run build`, and `npm run build:demo`.
+4. GitHub Pages publishes `demo-dist/`.
+
+Expected demo URL:
+
+```text
+https://chrismac860.github.io/AutomatePNG/
+```
 
 ## Development
 

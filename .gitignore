@@ -1,5 +1,6 @@
 node_modules/
 dist/
+demo-dist/
 test-results/
 playwright-report/
 .vite/
@@ -10,3 +11,4 @@ playwright-report/
 
 .worktrees/
 worktrees/
+.superpowers/

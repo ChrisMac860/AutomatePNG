@@ -3,33 +3,167 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>story-sticker-kit demo</title>
+    <meta
+      name="description"
+      content="Grand 5km Run demo for story-sticker-kit: a mobile-first results table that generates transparent PNG finisher stickers."
+    />
+    <title>Grand 5km Run | story-sticker-kit demo</title>
   </head>
   <body>
-    <main>
-      <section class="controls" aria-label="Sticker controls">
-        <label>
-          Name
-          <input id="name-input" value="Christopher Mackle" autocomplete="off" />
-        </label>
-        <label>
-          Time
-          <input id="time-input" value="22:41" autocomplete="off" />
-        </label>
-        <label>
-          Event
-          <input id="event-input" value="The Long Woman's 5K" autocomplete="off" />
-        </label>
-        <button id="render-button" type="button">Render PNG</button>
-        <button id="copy-button" type="button">Copy PNG</button>
-        <button id="share-button" type="button">Share to Story</button>
-        <a id="download-link" download="sticker.png">Download result</a>
-        <p id="copy-status" role="status" aria-live="polite"></p>
+    <header class="site-header" aria-label="Site header">
+      <a class="brand" href="#top" aria-label="Grand 5km Run home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Grand 5km Run</span>
+      </a>
+      <nav aria-label="Demo sections">
+        <a href="#how-it-works">How it works</a>
+        <a href="#results">Results</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero band band-dark">
+        <div class="hero-copy reveal">
+          <p class="section-label">story-sticker-kit demo</p>
+          <h1>Grand 5km Run</h1>
+          <p class="hero-lede">
+            A race-results page where every finisher can turn their official time into a
+            transparent PNG sticker for stories, messages, and mobile share sheets.
+          </p>
+          <a class="button button-primary" href="#results">View results</a>
+        </div>
+        <div class="hero-visual reveal" aria-hidden="true">
+          <svg viewBox="0 0 420 310" role="img">
+            <path
+              class="route-shadow"
+              d="M44 169 L72 142 L118 101 L163 58 L189 84 L230 116 L277 120 L323 98 L370 111 L393 154 L381 216 L393 253 L365 274 L232 254 L156 232 L84 231 L76 208 L56 211 Z"
+            />
+            <path
+              class="route-line"
+              d="M44 169 L72 142 L118 101 L163 58 L189 84 L230 116 L277 120 L323 98 L370 111 L393 154 L381 216 L393 253 L365 274 L232 254 L156 232 L84 231 L76 208 L56 211 Z"
+            />
+            <path class="route-arrow" d="M111 98 L139 98 L130 124" />
+            <path class="route-arrow route-arrow-bottom" d="M230 252 L254 261 L234 278" />
+            <circle class="route-dot" cx="230" cy="116" r="16" />
+            <circle class="route-finish" cx="251" cy="127" r="17" />
+          </svg>
+        </div>
       </section>
-      <section class="preview" aria-label="Rendered preview">
-        <img id="output-preview" alt="Composed PNG preview" />
+
+      <section class="client-profile band band-light reveal" aria-labelledby="profile-heading">
+        <p class="section-label">Client profile</p>
+        <h2 id="profile-heading">Race day data, built for the phone.</h2>
+        <div class="profile-grid">
+          <p>
+            Grand 5km Run is a compact finish-line demo: official-looking results first,
+            then a one-tap PNG workflow for each runner.
+          </p>
+          <p>
+            The page keeps the table normal and accessible. The generated sticker stays hidden
+            until a finisher taps their row action.
+          </p>
+        </div>
+      </section>
+
+      <section
+        id="how-it-works"
+        class="how-it-works band band-white reveal"
+        aria-labelledby="how-heading"
+      >
+        <p class="section-label">How to use the library</p>
+        <h2 id="how-heading">Compose the PNG, then hand it to the browser.</h2>
+        <div class="usage-layout">
+          <div class="usage-copy">
+            <p>
+              Import <code>composePngBlob</code> from <code>story-sticker-kit/browser</code>,
+              pass a transparent source image, then place runner text with pixel-based text
+              layers. Each layer controls its box, font, color, alignment, line count, and
+              shrink/wrap fitting.
+            </p>
+            <p>
+              On mobile, pre-render the PNG inside the user action and call
+              <code>sharePngBlobToInstagramStory</code>. Browser JavaScript cannot force
+              Instagram Stories to open directly, so the library uses the native share sheet.
+              When sharing is unavailable, keep copy and download fallbacks visible.
+            </p>
+          </div>
+          <pre aria-label="Example code"><code>const blob = await composePngBlob({
+  image: routeStickerPng,
+  layers: [
+    { text: runner.time, box: timeBox, color: "#fff" },
+    { text: runner.participant, box: nameBox, color: "#fff" }
+  ]
+});
+
+await sharePngBlobToInstagramStory(blob, {
+  filename: "grand-5km-run-1.png"
+});</code></pre>
+        </div>
+      </section>
+
+      <section id="results" class="results-section band band-dark" aria-labelledby="results-heading">
+        <div class="results-intro reveal">
+          <p class="section-label">Official results</p>
+          <h2 id="results-heading">Grand 5km Run results</h2>
+          <p>
+            Tap a row share button to create that runner's PNG. The preview and fallback
+            actions appear only after a runner is selected.
+          </p>
+          <p id="share-status" class="status" role="status" aria-live="polite">
+            Choose a finisher to create a story sticker.
+          </p>
+        </div>
+
+        <section
+          id="sticker-panel"
+          class="sticker-panel reveal"
+          aria-labelledby="sticker-heading"
+          hidden
+        >
+          <div class="sticker-meta">
+            <p class="section-label">Generated PNG</p>
+            <h3 id="sticker-heading">Ready to share</h3>
+            <p id="selected-time" class="selected-time"></p>
+            <p id="selected-name" class="selected-name"></p>
+          </div>
+          <div class="sticker-preview-wrap">
+            <img
+              id="sticker-preview"
+              alt="Generated Grand 5km Run sticker preview"
+              hidden
+            />
+          </div>
+          <div class="fallback-actions" aria-label="PNG fallback actions">
+            <button id="copy-button" class="button button-secondary" type="button" disabled>
+              Copy PNG
+            </button>
+            <a id="download-link" class="button button-secondary" download="grand-5km-run.png">
+              Download PNG
+            </a>
+          </div>
+        </section>
+
+        <div class="table-frame reveal">
+          <table aria-label="Grand 5km Run results">
+            <thead>
+              <tr>
+                <th scope="col">Pos</th>
+                <th scope="col">Runner</th>
+                <th scope="col">5K time</th>
+                <th scope="col">Share</th>
+              </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
       </section>
     </main>
+
+    <footer class="site-footer band band-white">
+      <p>story-sticker-kit demo for transparent PNG race stickers.</p>
+      <a href="https://github.com/ChrisMac860/AutomatePNG">GitHub</a>
+    </footer>
+
     <script type="module" src="/main.ts"></script>
   </body>
 </html>

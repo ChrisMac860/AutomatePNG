@@ -36,12 +36,12 @@ describe("text layer validation", () => {
   });
 
   it("normalizes defaults for a minimal layer", () => {
-    const [layer] = normalizeTextLayers([
+    const layer = normalizeTextLayers([
       {
         text: "Runner",
         box: { x: 12, y: 16, width: 180, height: 48 }
       }
-    ]);
+    ])[0]!;
 
     expect(layer).toMatchObject({
       text: "Runner",
