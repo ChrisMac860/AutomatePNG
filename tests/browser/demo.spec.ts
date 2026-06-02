@@ -111,7 +111,7 @@ test("row share generates a transparent runner PNG and reveals the preview", asy
   });
   expect(pixelReport.visiblePixels).toBeGreaterThan(1_000);
   expect(pixelReport.whitePixels).toBeGreaterThan(100);
-  expect(pixelReport.upperDarkPixels).toBeLessThan(200);
+  expect(pixelReport.upperDarkPixels).toBeGreaterThan(1_000);
 });
 
 test("iPhone row share copies the generated PNG instead of opening a generic file sheet", async ({

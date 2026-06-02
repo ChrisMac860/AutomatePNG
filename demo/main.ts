@@ -11,7 +11,7 @@ import "./styles.css";
 
 const EVENT_NAME = "Grand 5km Run";
 const routeStickerPng = new URL(
-  "./assets/grand-5km-route-cropped-transparent.png",
+  "./assets/grand-5km-route-stickman-transparent.png",
   import.meta.url
 ).href;
 
