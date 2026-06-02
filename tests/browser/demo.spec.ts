@@ -74,8 +74,11 @@ test("row share generates a transparent runner PNG and reveals the preview", asy
     const cornerAlpha = ctx.getImageData(0, 0, 1, 1).data[3];
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let whitePixels = 0;
+    let upperDarkPixels = 0;
     let visiblePixels = 0;
     for (let i = 0; i < imageData.length; i += 4) {
+      const pixelIndex = i / 4;
+      const y = Math.floor(pixelIndex / canvas.width);
       const red = imageData[i] ?? 0;
       const green = imageData[i + 1] ?? 0;
       const blue = imageData[i + 2] ?? 0;
@@ -86,11 +89,15 @@ test("row share generates a transparent runner PNG and reveals the preview", asy
       if (alpha > 180 && red > 235 && green > 235 && blue > 235) {
         whitePixels += 1;
       }
+      if (y < 260 && alpha > 180 && red < 45 && green < 45 && blue < 45) {
+        upperDarkPixels += 1;
+      }
     }
 
     return {
       cornerAlpha,
       height: decoded.naturalHeight,
+      upperDarkPixels,
       visiblePixels,
       whitePixels,
       width: decoded.naturalWidth
@@ -99,11 +106,12 @@ test("row share generates a transparent runner PNG and reveals the preview", asy
 
   expect(pixelReport).toMatchObject({
     cornerAlpha: 0,
-    width: 1440,
-    height: 1080
+    width: 1448,
+    height: 1086
   });
   expect(pixelReport.visiblePixels).toBeGreaterThan(1_000);
   expect(pixelReport.whitePixels).toBeGreaterThan(100);
+  expect(pixelReport.upperDarkPixels).toBeLessThan(200);
 });
 
 test("iPhone row share copies the generated PNG instead of opening a generic file sheet", async ({
