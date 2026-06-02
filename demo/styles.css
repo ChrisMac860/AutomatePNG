@@ -1,0 +1,128 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  color: #17202a;
+  background: #f5f7fb;
+}
+
+main {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) minmax(320px, 1fr);
+  gap: 28px;
+  width: min(1040px, calc(100vw - 32px));
+  margin: 40px auto;
+  align-items: start;
+}
+
+.controls,
+.preview {
+  background: #ffffff;
+  border: 1px solid #dce3ee;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.controls {
+  display: grid;
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+input {
+  min-height: 42px;
+  border: 1px solid #b8c2d1;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: inherit;
+  font-weight: 400;
+}
+
+button,
+a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+button {
+  border: 0;
+  color: #ffffff;
+  background: #101820;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+a {
+  color: #101820;
+  border: 1px solid #b8c2d1;
+  background: #ffffff;
+}
+
+#copy-button {
+  color: #101820;
+  background: #ff6b35;
+}
+
+#share-button {
+  color: #ffffff;
+  background: #3157ff;
+}
+
+#copy-status {
+  min-height: 20px;
+  margin: 0;
+  color: #1f6f43;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.preview {
+  min-height: 520px;
+  display: grid;
+  place-items: center;
+  background-image:
+    linear-gradient(45deg, #d7dde7 25%, transparent 25%),
+    linear-gradient(-45deg, #d7dde7 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d7dde7 75%),
+    linear-gradient(-45deg, transparent 75%, #d7dde7 75%);
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+  background-size: 20px 20px;
+}
+
+img {
+  display: block;
+  width: min(100%, 760px);
+  height: auto;
+}
+
+@media (max-width: 760px) {
+  main {
+    grid-template-columns: 1fr;
+    margin-top: 18px;
+  }
+}

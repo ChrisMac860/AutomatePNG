@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>story-sticker-kit demo</title>
+  </head>
+  <body>
+    <main>
+      <section class="controls" aria-label="Sticker controls">
+        <label>
+          Name
+          <input id="name-input" value="Christopher Mackle" autocomplete="off" />
+        </label>
+        <label>
+          Time
+          <input id="time-input" value="22:41" autocomplete="off" />
+        </label>
+        <label>
+          Event
+          <input id="event-input" value="The Long Woman's 5K" autocomplete="off" />
+        </label>
+        <button id="render-button" type="button">Render PNG</button>
+        <button id="copy-button" type="button">Copy PNG</button>
+        <button id="share-button" type="button">Share to Story</button>
+        <a id="download-link" download="sticker.png">Download result</a>
+        <p id="copy-status" role="status" aria-live="polite"></p>
+      </section>
+      <section class="preview" aria-label="Rendered preview">
+        <img id="output-preview" alt="Composed PNG preview" />
+      </section>
+    </main>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

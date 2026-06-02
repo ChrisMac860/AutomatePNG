@@ -1,0 +1,12 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.vite/
+.DS_Store
+.env
+.env.*
+.vite-server*.log
+
+.worktrees/
+worktrees/

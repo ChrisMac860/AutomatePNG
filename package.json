@@ -1,0 +1,54 @@
+{
+  "name": "story-sticker-kit",
+  "version": "0.1.0",
+  "description": "Create transparent PNG story stickers with text overlays, clipboard copy, and iPhone share-sheet support.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "keywords": [
+    "story",
+    "sticker",
+    "instagram",
+    "share-sheet",
+    "clipboard",
+    "png",
+    "canvas",
+    "typescript"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "vite --host 127.0.0.1",
+    "dev:phone": "vite --host 0.0.0.0",
+    "test": "vitest run",
+    "test:browser": "playwright test"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^4.0.10"
+  }
+}
